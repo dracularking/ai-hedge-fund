@@ -1,5 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
+echo --- Script Start ---
 
 :: Default values
 set TICKER=AAPL,MSFT,NVDA
@@ -11,6 +12,8 @@ set MARGIN_REQUIREMENT=0.0
 set SHOW_REASONING=
 set COMMAND=
 set MODEL_NAME=
+
+call :parse_args %*
 
 :: Help function
 :show_help
@@ -48,9 +51,14 @@ goto :eof
 
 :: Parse arguments
 :parse_args
-if "%~1"=="" goto :check_command
+echo --- In parse_args, arguments: %~1 ---
+if "%~1"=="" (
+    echo --- End of parse_args loop, checking command ---
+    goto :check_command
+)
 if "%~1"=="--ticker" (
     set TICKER=%~2
+    echo TICKER: %TICKER%
     shift
     shift
     goto :parse_args
@@ -122,6 +130,7 @@ if "%~1"=="pull" (
     goto :parse_args
 )
 if "%~1"=="help" (
+    echo --- Calling show_help for help command ---
     call :show_help
     exit /b 0
 )
@@ -130,15 +139,19 @@ if "%~1"=="--help" (
     exit /b 0
 )
 echo Unknown option: %~1
+echo --- Calling show_help for unknown option ---
 call :show_help
 exit /b 1
 
+echo --- In check_command, COMMAND=!COMMAND! ---
 :check_command
 if "!COMMAND!"=="" (
     echo Error: No command specified.
+    echo --- Calling show_help for no command ---
     call :show_help
     exit /b 1
 )
+echo COMMAND: !COMMAND!
 
 :: Show help if 'help' command is provided
 if "!COMMAND!"=="help" (
@@ -158,13 +171,18 @@ if !ERRORLEVEL! EQU 0 (
         echo Error: Docker Compose is not installed.
         exit /b 1
     )
+
 )
+
 
 :: Build the Docker image if 'build' command is provided
 if "!COMMAND!"=="build" (
+    echo --- Executing build command ---
+
     docker build -t ai-hedge-fund .
     exit /b 0
 )
+
 
 :: Start Ollama container if 'ollama' command is provided
 if "!COMMAND!"=="ollama" (
@@ -195,8 +213,10 @@ if "!COMMAND!"=="ollama" (
     exit /b 1
 )
 
+
 :: Pull a model if 'pull' command is provided
 if "!COMMAND!"=="pull" (
+    echo --- Executing pull command ---
     if "!MODEL_NAME!"=="" (
         echo Error: No model name specified.
         echo Usage: run.bat pull ^<model-name^>
@@ -219,11 +239,11 @@ if "!COMMAND!"=="pull" (
         echo.
     )
     
-    :pull_model
     :: Pull the model
+    :pull_model
     echo Pulling model: !MODEL_NAME!
     echo This may take some time depending on the model size and your internet connection.
-    echo You can press Ctrl+C to cancel at any time (the model will continue downloading in the background).
+    echo You can press Ctrl+C to cancel at any time,the model will continue downloading in the background
     
     !COMPOSE_CMD! exec ollama ollama pull "!MODEL_NAME!"
     
@@ -239,12 +259,15 @@ if "!COMMAND!"=="pull" (
     exit /b 0
 )
 
+
 :: Run with Docker Compose if 'compose' command is provided
 if "!COMMAND!"=="compose" (
-    echo Running with Docker Compose (includes Ollama)...
+    echo --- Executing compose command ---
+    echo Running with Docker Compose, includes Ollama
     !COMPOSE_CMD! up --build
     exit /b 0
 )
+
 
 :: Check if .env file exists, if not create from .env.example
 if not exist .env (
@@ -259,7 +282,9 @@ if not exist .env (
 )
 
 :: Set script path and parameters based on command
+echo --- Checking for main/backtest command ---
 if "!COMMAND!"=="main" (
+    echo Running main...
     set SCRIPT_PATH=src/main.py
     if "!COMMAND!"=="main" (
         set INITIAL_PARAM=--initial-cash !INITIAL_AMOUNT!
@@ -337,6 +362,7 @@ if not "!USE_OLLAMA!"=="" (
     exit /b 0
 )
 
+echo --- Falling through to Standard Docker run ---
 :: Standard Docker run (without Ollama)
 :: Build the command
 set CMD=docker run -it --rm -v %cd%\.env:/app/.env
@@ -346,10 +372,11 @@ set CMD=!CMD! ai-hedge-fund python !SCRIPT_PATH! --ticker !TICKER! !START_DATE! 
 
 :: Run the command
 echo Running: !CMD!
+echo --- Executing docker run command: !CMD! ---
 !CMD!
 
 :: Exit
+echo --- Script End ---
 exit /b 0
 
 :: Start script execution
-call :parse_args %* 

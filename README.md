@@ -117,7 +117,7 @@ cp .env.example .env
 ./run.sh build
 
 # On Windows:
-run.bat build
+docker build -t ai-hedge-fund .
 ```
 
 **Important**: You must set `OPENAI_API_KEY`, `GROQ_API_KEY`, `ANTHROPIC_API_KEY`, or `DEEPSEEK_API_KEY` for the hedge fund to work.  If you want to use LLMs from all providers, you will need to set all API keys.
@@ -141,7 +141,7 @@ poetry run python src/main.py --ticker AAPL,MSFT,NVDA
 ./run.sh --ticker AAPL,MSFT,NVDA main
 
 # On Windows:
-run.bat --ticker AAPL,MSFT,NVDA main
+run.bat --ticker "AAPL,MSFT,NVDA" main
 ```
 
 **Example Output:**
